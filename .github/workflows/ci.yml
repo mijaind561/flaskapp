@@ -1,0 +1,63 @@
+[cite_start]name: Flask App CI/CD Pipeline [cite: 46]
+
+on:
+  push:
+    [cite_start]branches: [ main ] [cite: 47, 68]
+  pull_request:
+    [cite_start]branches: [ main ] [cite: 69]
+
+jobs:
+  # Job 1: Run Unit Tests in Parallel with Docker Build [cite: 70]
+  test:
+    [cite_start]runs-on: ubuntu-latest [cite: 49]
+    steps:
+      - name: Checkout code
+        [cite_start]uses: actions/checkout@v4 [cite: 51]
+
+      - name: Set up Python
+        [cite_start]uses: actions/setup-python@v5 [cite: 52]
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt [cite: 53]
+
+      - name: Run tests with pytest
+        [cite_start]run: pytest [cite: 53]
+
+      # Optional: Email notification if tests fail [cite: 72]
+      - name: Send mail on failure
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: Github Actions Test Log
+          body: Build job of ${{github.repository}} failed!
+          to: your-email@example.com
+
+  # Job 2: Build and Push Docker Image [cite: 57, 58]
+  build-and-push:
+    [cite_start]needs: test # Ensures push only happens if tests pass [cite: 71]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          [cite_start]username: ${{ secrets.DOCKER_USERNAME }} [cite: 61, 63]
+          [cite_start]password: ${{ secrets.DOCKER_PASSWORD }} [cite: 62, 63]
+
+      - name: Build and Push to Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          # Pushing to multiple registries example (Docker Hub + Private) [cite: 66, 67]
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/flaskapp:latest
