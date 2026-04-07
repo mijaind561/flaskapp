@@ -5,6 +5,7 @@ pipeline {
         SUM_PY_PATH = "${WORKSPACE}/sum.py"
         DIR_PATH = "${WORKSPACE}"
         TEST_FILE_PATH = "${WORKSPACE}/test_variables.txt"
+        DOCKERHUB_USERNAME = "${env.DOCKERHUB_USERNAME}"
     }
     stages {
         stage('Build') {
@@ -48,8 +49,13 @@ pipeline {
         stage('Deploy') {
             steps {
                 bat "docker login"
-                bat "docker tag sum-app your_dockerhub_username/sum-app:latest"
-                bat "docker push your_dockerhub_username/sum-app:latest"
+                script {
+                    if (!DOCKERHUB_USERNAME?.trim()) {
+                        error "DOCKERHUB_USERNAME env var is not set."
+                    }
+                }
+                bat "docker tag sum-app %DOCKERHUB_USERNAME%/sum-app:latest"
+                bat "docker push %DOCKERHUB_USERNAME%/sum-app:latest"
             }
         }
     }
